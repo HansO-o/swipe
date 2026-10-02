@@ -9,6 +9,7 @@
 | `swipe.js` | 只有手势：产出 `p` |
 | `history.js` | 页面栈，和浏览器历史保持同步，不依赖任何框架 |
 | `react.js` | React 路由：`<SwipeRouter>`、`<Link>`、hooks，见下文 [React 路由](#react-路由) |
+| `nozoom.js` | 禁止整页缩放（PWA 用），见下文 [禁止缩放](#禁止缩放) |
 
 - `p` 是连续值：`100` = 一页，正数表示返回，负数表示前进，静止时为 `0`。
 - 手指和弹簧只负责写入 `p`，你的界面只负责读取 `p`。
@@ -152,3 +153,28 @@ function Item({ params, query }) {
 ```bash
 cd react-example && npm install && npm run build   # 生成 app.js（已包含 React）
 ```
+
+## 禁止缩放
+
+`nozoom.js` 让安装后的 PWA 始终保持 100%，不能被放大或缩小：
+
+```js
+import { preventZoom } from './nozoom.js';
+
+preventZoom();                            // 只在 PWA（独立窗口 / 全屏）模式下生效
+preventZoom({ standaloneOnly: false });   // 普通网页里也生效
+```
+
+它会拦掉这些缩放方式：
+
+- 双指捏合（包括 iOS）；
+- 双击放大；
+- Ctrl/⌘ + 滚轮，以及触控板双指捏合；
+- Ctrl/⌘ + `+` `-` `0` 快捷键。
+
+返回值是一个函数，调用它可以撤销上面所有设置。
+
+**注意：**
+
+- 输入框的字号要不小于 16px，否则 iOS 在聚焦输入框时仍会自动放大。
+- 禁止缩放会影响视力不好的用户，所以默认只在 PWA 模式下开启。

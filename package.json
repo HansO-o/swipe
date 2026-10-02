@@ -6,10 +6,29 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./swipe.d.ts", "default": "./swipe.js" },
-    "./history": { "types": "./history.d.ts", "default": "./history.js" },
-    "./react": { "types": "./react.d.ts", "default": "./react.js" }
+    ".": {
+      "types": "./swipe.d.ts",
+      "default": "./swipe.js"
+    },
+    "./history": {
+      "types": "./history.d.ts",
+      "default": "./history.js"
+    },
+    "./react": {
+      "types": "./react.d.ts",
+      "default": "./react.js"
+    },
+    "./nozoom": {
+      "types": "./nozoom.d.ts",
+      "default": "./nozoom.js"
+    }
   },
-  "peerDependencies": { "react": ">=18" },
-  "peerDependenciesMeta": { "react": { "optional": true } }
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
 }
