@@ -11,6 +11,8 @@
 | `react.js` | React 路由：`<SwipeRouter>`、`<Link>`、hooks，见下文 [React 路由](#react-路由) |
 | `nozoom.js` | 禁止整页缩放（PWA 用），见下文 [禁止缩放](#禁止缩放) |
 
+另有两个可运行的示例：[`react-example/`](react-example/)（React 路由）和 [`pwa-example/`](pwa-example/)（可安装、离线可用的 PWA，见 [PWA 示例](#pwa-示例)）。
+
 - `p` 是连续值：`100` = 一页，正数表示返回，负数表示前进，静止时为 `0`。
 - 手指和弹簧只负责写入 `p`，你的界面只负责读取 `p`。
 
@@ -178,3 +180,31 @@ preventZoom({ standaloneOnly: false });   // 普通网页里也生效
 
 - 输入框的字号要不小于 16px，否则 iOS 在聚焦输入框时仍会自动放大。
 - 禁止缩放会影响视力不好的用户，所以默认只在 PWA 模式下开启。
+
+## PWA 示例
+
+[`pwa-example/`](pwa-example/) 是一个用 `react.js` 做路由、可以安装到桌面或主屏幕的离线笔记应用：
+
+```bash
+cd pwa-example && npm install && npm run build   # 生成 app.js，并给 sw.js 打上版本号
+npx serve .                                       # 或任何静态服务器；Service Worker 需要 https 或 localhost
+```
+
+| 文件 | 作用 |
+|---|---|
+| `main.jsx` | 页面：笔记列表 `/`、新建 `/new`、编辑 `/note/:id`、应用状态 `/app` |
+| `pwa.js` | 安装提示、运行方式、在线状态、Service Worker 注册与更新，合成一个 `usePwa()` |
+| `notes.js` | 笔记存在 `localStorage` 里，多个标签页之间同步 |
+| `sw.js` | 离线优先的应用外壳缓存 |
+| `manifest.webmanifest`、`icons/` | 名称、图标（含 maskable 和 iOS 的 apple-touch-icon）、主屏幕快捷方式 |
+
+**演示了什么**
+
+- **离线**：第一次打开就把外壳（`./`、`app.js`、manifest、图标）全部缓存。用的是 hash 路由，任何深链接的导航请求都只是 `./`，所以断网后打开任何页面都行。
+- **安装**：Chrome / Edge 拦下 `beforeinstallprompt`，在首页显示自己的“安装”按钮；iOS 没有这个事件，改为提示“分享 → 添加到主屏幕”。已安装运行时开启 `preventZoom()`。
+- **更新**：`npm run build` 用源文件的哈希作为版本号写进 `sw.js`，所以每次改动都会作为新的 Service Worker 发布。新版本在后台装好后先等待，底部出现“新版本已就绪 · 刷新”，点了才切换，避免一半旧代码一半新代码。刷新后页面栈从 `sessionStorage` 恢复，仍然可以滑回去。
+- **路由**：编辑中有未保存的修改时用 `useSwipeBlock` 拦住滑动、返回按钮和浏览器后退；新建的笔记保存后用 `replace` 换成它自己的地址；离线提示和更新提示作为 `<SwipeRouter>` 的子元素，放在页面层之上。
+
+手势不会从输入框上开始（见 `ignore`），所以正文输入框随内容长高，下面的空白处仍然可以滑动返回。
+
+图标 PNG 由 `icons/icon.svg` 渲染而来，maskable 和 apple-touch-icon 去掉了圆角、铺满底色，由系统自己裁剪。

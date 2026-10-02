@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Swipe 笔记</title>
+<meta name="description" content="swipe.js 路由的 PWA 示例：离线可用、可安装、手势翻页。">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#fbfcfd" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121a21" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="笔记">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root {
+    --bg: #eef1f4; --page: #fbfcfd; --ink: #16212b; --ink-2: #5b6772; --line: #e3e8ec;
+    --accent: #0c7f8a; --accent-ink: #fff; --warn: #c8472f; --ok: #1f9d55; color-scheme: light;
+    --swipe-page-bg: var(--page);
+    --gutter-l: max(16px, env(safe-area-inset-left, 0px)); --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b1015; --page: #121a21; --ink: #e6eef3; --ink-2: #93a1ad; --line: #222d36;
+      --accent: #46c6d2; --accent-ink: #062a2e; --warn: #ff8a70; --ok: #4ad087; color-scheme: dark; }
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+  #root { position: fixed; inset: 0; }
+  .app { max-width: 720px; margin: 0 auto; box-shadow: 0 0 0 1px var(--line); }
+  p { margin: 0; }
+
+  .bar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) calc(var(--gutter-r) - 6px) 8px calc(var(--gutter-l) - 6px);
+    background: color-mix(in srgb, var(--page) 88%, transparent);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+  .bar h1 { flex: 1; min-width: 0; margin: 0; font-size: 17px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .back { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--accent);
+    font-size: 30px; line-height: 1; cursor: pointer; }
+  .tools { display: flex; align-items: center; gap: 4px; }
+  .tool { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 0; border-radius: 999px;
+    background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
+  .tool.add { width: 36px; padding: 0; justify-content: center; color: var(--accent); font-size: 22px; }
+  .tool.strong { color: var(--accent); font-weight: 650; font-size: 16px; }
+  .tool:disabled { opacity: 0.4; cursor: default; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); }
+  .dot.on { background: var(--ok); }
+
+  .body { padding: 16px var(--gutter-r) calc(env(safe-area-inset-bottom, 0px) + 88px) var(--gutter-l);
+    display: flex; flex-direction: column; gap: 14px; }
+  .hint { color: var(--ink-2); font-size: 14px; }
+  .center { text-align: center; padding: 32px 0; }
+  .list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .list li + li { border-top: 1px solid var(--line); }
+  .list a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; color: inherit; text-decoration: none; }
+  .list a:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .grow strong { font-weight: 600; }
+  .excerpt, .list time { color: var(--ink-2); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list time { flex: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 10%, var(--page)); }
+  .confirm { padding: 14px; border-radius: 14px; background: color-mix(in srgb, var(--warn) 10%, var(--page)); }
+  .confirm p { margin: 0 0 10px; font-weight: 600; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .button { display: inline-block; padding: 9px 18px; border: 0; border-radius: 999px; background: var(--accent);
+    color: var(--accent-ink); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .button.ghost { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+  .button.danger { color: var(--warn); }
+  .button.warn { background: var(--warn); color: #fff; }
+  .button:disabled { opacity: 0.45; cursor: default; }
+
+  /* 16px or more, or iOS zooms in on focus */
+  input.title, textarea { font: inherit; font-size: 16px; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  input.title { font-size: 20px; font-weight: 650; }
+  textarea { box-sizing: border-box; min-height: 8.5em; resize: none; overflow: hidden; line-height: 1.7; }
+  input:disabled, textarea:disabled { opacity: 0.6; }
+
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; padding: 14px;
+    border: 1px solid var(--line); border-radius: 14px; }
+  .facts dt { color: var(--ink-2); font-size: 14px; }
+  .facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  code { font: 13px/1.6 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  .toasts { position: fixed; z-index: 9; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+  .toast { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 999px; white-space: nowrap;
+    background: #16212b; color: #fff; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.25); pointer-events: auto; }
+  .toast.muted { padding: 6px 14px; background: rgba(22, 33, 43, 0.82); }
+  .toast button { border: 0; border-radius: 999px; padding: 6px 14px; background: #46c6d2; color: #062a2e; font: inherit; font-weight: 650; cursor: pointer; }
+
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
