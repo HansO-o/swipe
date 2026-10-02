@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>swipe.js · 把翻页手势变成一个数字</title>
+<meta name="description" content="swipe.js：把左右滑动翻页变成一个数字 p。单文件、零依赖，附带与浏览器历史同步的页面栈和 React 路由。">
+<meta name="theme-color" content="#f2f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1015" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="swipe">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #f2f4f6; --page: #f2f4f6; --surface: #ffffff; --ink: #121b23; --ink-2: #5d6974; --ink-3: #8c97a1;
+    --line: #e1e6ea; --accent: #0c7f8a; --accent-ink: #ffffff; --accent-soft: #dff1f2; --warn: #c8472f;
+    --ok: #2f9e5b; --code-bg: #f6f8f9; --kw: #a3368a; --str: #2d7d3a; --num: #b05a00; --com: #8a959e; --tag: #0b6bcb;
+    --desk: #e3e8ec; --shadow: 0 30px 80px rgba(20, 35, 50, 0.22), 0 0 0 1px rgba(20, 35, 50, 0.08);
+    --swipe-page-bg: var(--page);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1015; --page: #0b1015; --surface: #151d24; --ink: #e6eef3; --ink-2: #9aa7b2; --ink-3: #6b7884;
+      --line: #232e37; --accent: #46c6d2; --accent-ink: #052a2e; --accent-soft: #10343a; --warn: #ff8a70;
+      --ok: #5fd08f; --code-bg: #10171d; --kw: #e58bd0; --str: #8fd69b; --num: #ffb46b; --com: #6f7d88; --tag: #7cb8ff;
+      --desk: #05080b; --shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  a { color: var(--accent); }
+  code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+  /* ---------- shell: full screen on phones, a device on desks ---------- */
+  .intro { display: none; }
+  .device { position: fixed; inset: 0; overflow: hidden; background: var(--page); }
+  #root { position: absolute; inset: 0; }
+  @media (min-width: 880px) and (min-height: 640px) {
+    body { background: var(--desk); }
+    .shell { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; gap: 72px; padding: 32px; }
+    .device { position: relative; inset: auto; flex: none; width: 400px; height: min(860px, calc(100vh - 64px));
+      border-radius: 46px; box-shadow: var(--shadow); isolation: isolate; }
+    .intro { display: block; max-width: 340px; color: var(--ink-2); }
+    .intro .logo { width: 64px; height: 64px; border-radius: 16px; display: block; }
+    .intro h1 { margin: 18px 0 6px; color: var(--ink); font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; }
+    .intro .tag { margin: 0 0 22px; font-size: 19px; color: var(--ink); }
+    .intro p { margin: 0 0 12px; font-size: 15px; }
+    .intro kbd { font: 12px ui-monospace, Menlo, monospace; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--ink); }
+    .intro .links { margin-top: 22px; display: flex; gap: 16px; font-size: 15px; font-weight: 600; }
+  }
+
+  /* ---------- page chrome ---------- */
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; min-height: 52px;
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 6px; background: color-mix(in srgb, var(--page) 82%, transparent);
+    backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px);
+    border-bottom: 0.5px solid transparent; transition: border-color 0.2s; }
+  .bar.edge { border-bottom-color: var(--line); }
+  .bar h1 { position: absolute; left: 72px; right: 72px; margin: 0; text-align: center; font-size: 17px; font-weight: 650;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.18s; pointer-events: none; }
+  .bar h1.off { opacity: 0; }
+  .back { display: inline-flex; align-items: center; gap: 2px; height: 40px; padding: 0 8px 0 2px; border: 0; background: none;
+    color: var(--accent); font: inherit; font-size: 17px; cursor: pointer; border-radius: 10px; }
+  .back svg { width: 26px; height: 26px; }
+  .content { padding: 4px 16px calc(env(safe-area-inset-bottom, 0px) + 76px); }
+  .large { margin: 2px 4px 14px; font-size: 34px; line-height: 1.15; font-weight: 750; letter-spacing: -0.02em; }
+  .content > p, .prose p { margin: 0 4px 14px; color: var(--ink); }
+  .lead { color: var(--ink-2) !important; }
+  .content h2 { margin: 28px 4px 10px; font-size: 20px; letter-spacing: -0.01em; }
+  .content h3 { margin: 22px 4px 8px; font-size: 16px; }
+  .content ul.dots { margin: 0 4px 14px; padding-left: 20px; }
+  .content ul.dots li { margin-bottom: 6px; }
+  :not(pre) > code { font-size: 0.88em; padding: 1px 5px; border-radius: 5px; background: var(--code-bg); border: 0.5px solid var(--line); }
+
+  /* ---------- grouped lists ---------- */
+  .group { margin: 0 0 22px; }
+  .group-title { margin: 0 16px 6px; font-size: 13px; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .group-foot { margin: 6px 16px 0; font-size: 13px; color: var(--ink-2); }
+  .list { margin: 0; padding: 0; list-style: none; background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .list > li + li > .row::before { content: ""; position: absolute; top: 0; left: 58px; right: 0; border-top: 0.5px solid var(--line); }
+  .list > li + li > .row.plain::before { left: 16px; }
+  .row { position: relative; display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 9px 14px;
+    color: inherit; text-decoration: none; cursor: pointer; }
+  a.row:active, button.row:active { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  button.row { width: 100%; border: 0; background: none; font: inherit; text-align: left; }
+  .row .label { flex: 1; min-width: 0; }
+  .row .label small { display: block; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
+  .row .detail { color: var(--ink-2); font-size: 15px; white-space: nowrap; }
+  .row .chev { width: 8px; height: 14px; color: var(--ink-3); flex: none; }
+  .row .check { width: 20px; height: 20px; color: var(--ok); flex: none; }
+  .tile { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none; }
+  .tile svg { width: 20px; height: 20px; }
+
+  /* ---------- cards, hero ---------- */
+  .card { background: var(--surface); border-radius: 18px; padding: 16px; margin: 0 0 18px; }
+  .hero { position: relative; overflow: hidden; padding: 20px 18px 18px; border-radius: 22px; margin: 0 0 22px;
+    color: #fff; background: radial-gradient(120% 120% at 0% 0%, #19a5b2 0%, #0c7f8a 45%, #0a4f6e 100%); }
+  .hero .big { font: 700 15px/1 ui-monospace, Menlo, monospace; opacity: 0.8; letter-spacing: 0.04em; }
+  .hero .pval { margin: 10px 0 4px; font: 700 56px/1 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em; }
+  .hero .meter { position: relative; height: 8px; margin: 14px 0 6px; border-radius: 99px; background: rgba(255,255,255,0.18); }
+  .hero .meter i { position: absolute; top: -4px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25); left: 50%; }
+  .hero .meter b { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: rgba(255,255,255,0.5); }
+  .hero .scale { display: flex; justify-content: space-between; font: 11px ui-monospace, Menlo, monospace; opacity: 0.75; }
+  .hero p { margin: 14px 0 0; font-size: 15px; line-height: 1.5; opacity: 0.95; }
+  .stats { display: flex; gap: 8px; margin: 14px 0 0; }
+  .stats span { padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,0.16); font-size: 13px; font-weight: 600; }
+
+  .tip { display: flex; gap: 12px; align-items: center; margin: 0 0 22px; padding: 12px 14px; border-radius: 16px;
+    background: var(--accent-soft); color: var(--ink); font-size: 14px; line-height: 1.5; }
+  .tip .x { margin-left: auto; align-self: flex-start; border: 0; background: none; color: var(--ink-2); font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+
+  /* ---------- code ---------- */
+  .code { position: relative; margin: 0 0 18px; border-radius: 14px; background: var(--code-bg); border: 0.5px solid var(--line); }
+  /* Wrapped, not scrolled sideways: a horizontal drag anywhere on a page belongs to the page swipe. */
+  .code pre { margin: 0; padding: 4px 14px 14px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .code .cap { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 0 14px; font-size: 11.5px;
+    color: var(--ink-3); font-family: ui-monospace, Menlo, monospace; }
+  .code .copy { padding: 2px 9px; border-radius: 7px; border: 0; background: none; color: var(--accent);
+    font: 600 12px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif; cursor: pointer; }
+  .t-kw { color: var(--kw); } .t-str { color: var(--str); } .t-num { color: var(--num); } .t-com { color: var(--com); font-style: italic; }
+  .t-tag { color: var(--tag); }
+
+  /* ---------- buttons, controls ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 18px;
+    border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font: inherit; font-size: 15px; font-weight: 600;
+    text-decoration: none; cursor: pointer; }
+  .btn.ghost { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+  .btn.warn { background: var(--warn); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .seg { display: flex; padding: 2px; margin: 0 0 14px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .seg button { flex: 1; min-height: 32px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+  .seg button.on { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.12); font-weight: 600; }
+  .slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 14px; }
+  .slider label { font-size: 15px; }
+  .slider label small { color: var(--ink-2); font-size: 12px; margin-left: 6px; }
+  .slider output { font: 13px ui-monospace, Menlo, monospace; color: var(--ink-2); align-self: center; }
+  .slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .switch { appearance: none; -webkit-appearance: none; width: 50px; height: 30px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 16%, transparent);
+    position: relative; cursor: pointer; transition: background 0.2s; flex: none; margin: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.2s; }
+  .switch:checked { background: var(--ok); }
+  .switch:checked::after { transform: translateX(20px); }
+  .field { display: flex; flex-direction: column; gap: 6px; margin: 0 0 14px; color: var(--ink-2); font-size: 14px; }
+  .field input, .field textarea { font: inherit; font-size: 16px; color: var(--ink); padding: 10px 12px; border-radius: 12px;
+    border: 0.5px solid var(--line); background: var(--surface); }
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- practice deck ---------- */
+  .deck { position: relative; overflow: hidden; height: 210px; border-radius: 18px; background: var(--surface);
+    touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+  .deck:active { cursor: grabbing; }
+  .deck-card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 16px; color: #0e1a22; will-change: transform; }
+  .deck-card .n { font-size: 54px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+  .deck-card .s { font-size: 13px; opacity: 0.7; text-align: center; }
+  .deck-shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .deck-dots { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+  .deck-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(14, 26, 34, 0.25); }
+  .deck-dots i.on { background: rgba(14, 26, 34, 0.75); }
+  .readout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 8px 0 0; border-radius: 12px; overflow: hidden;
+    background: var(--line); font: 12px/1.3 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .readout div { padding: 7px 8px; background: var(--surface); }
+  .readout b { display: block; font-weight: 400; color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.04em; }
+  .readout span { color: var(--ink); white-space: nowrap; }
+  .scope { display: block; width: 100%; height: 150px; margin: 8px 0 0; border-radius: 12px; background: var(--surface); }
+  .practice { margin: 0 0 20px; }
+  .practice-title { display: flex; align-items: center; justify-content: space-between; margin: 0 4px 8px; font-size: 13px;
+    color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .practice-title button { border: 0; background: none; color: var(--accent); font: inherit; font-size: 13px; text-transform: none; cursor: pointer; }
+
+  /* ---------- tasks ---------- */
+  .tasks .row { cursor: default; }
+  .tasks .ring { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--ink-3); flex: none; display: grid; place-items: center;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s; }
+  .tasks .ring svg { width: 14px; height: 14px; color: #fff; opacity: 0; transition: opacity 0.2s; }
+  .tasks .done .ring { background: var(--ok); border-color: var(--ok); transform: scale(1.08); }
+  .tasks .done .ring svg { opacity: 1; }
+  .tasks .done .label { color: var(--ink-2); }
+  .complete { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; padding: 12px 14px; border-radius: 14px;
+    background: color-mix(in srgb, var(--ok) 14%, var(--surface)); font-weight: 600; animation: pop 0.4s cubic-bezier(.3,1.6,.5,1); }
+  .complete a { margin-left: auto; font-weight: 600; text-decoration: none; }
+  @keyframes pop { from { transform: scale(0.92); opacity: 0; } }
+
+  /* ---------- gesture hints ---------- */
+  .hint { display: flex; align-items: center; gap: 14px; margin: 0 0 18px; padding: 12px 14px; border-radius: 16px; background: var(--surface); }
+  .hint .screen { position: relative; flex: none; width: 92px; height: 132px; border-radius: 16px; overflow: hidden;
+    background: color-mix(in srgb, var(--ink) 10%, var(--surface)); border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+  .hint .pg { position: absolute; inset: 0; border-radius: 0; }
+  .hint .pg.under { background: hsl(200 30% 75%); }
+  .hint .pg.mid { background: hsl(40 75% 72%); }
+  .hint .pg.top { background: hsl(186 55% 62%); box-shadow: -4px 0 12px rgba(0,0,0,0.18); }
+  .hint .pg::before { content: ""; position: absolute; left: 10px; right: 26px; top: 16px; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.18);
+    box-shadow: 0 14px 0 rgba(0,0,0,0.1), 12px 28px 0 -0px rgba(0,0,0,0.1); }
+  .hint .zone { position: absolute; top: 0; bottom: 0; left: 0; width: 12px; background: color-mix(in srgb, var(--accent) 45%, transparent); z-index: 2; }
+  .hint .dot { position: absolute; z-index: 3; top: 58%; left: 20%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+    background: rgba(255,255,255,0.85); border: 2px solid rgba(0,0,0,0.25); box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; }
+  .hint .btnx { position: absolute; z-index: 1; left: 50%; top: 58%; width: 44px; height: 18px; margin: -9px 0 0 -22px; border-radius: 9px; background: #10181f; }
+  .hint .text { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .hint .text b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
+  .hint .lines { position: absolute; inset: 0; }
+  .hint .lines i { position: absolute; left: 10px; right: 14px; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.14); }
+  .hint .pg.scroll::before { display: none; }
+
+  /* drag: slow drag past half, release, page completes the trip */
+  [data-kind=drag] .dot { animation: d-dot 3.2s infinite; }
+  [data-kind=drag] .top { animation: d-top 3.2s infinite cubic-bezier(.3,.7,.2,1); }
+  @keyframes d-dot { 0% { left: 18%; opacity: 0; transform: scale(1.5); } 10% { left: 18%; opacity: 1; transform: scale(1); }
+    55% { left: 72%; opacity: 1; transform: scale(1); } 62%, 100% { left: 72%; opacity: 0; transform: scale(1.5); } }
+  @keyframes d-top { 0%, 10% { transform: translateX(0); } 55% { transform: translateX(54%); } 60% { transform: translateX(56%); animation-timing-function: cubic-bezier(.2,.8,.2,1); }
+    78%, 100% { transform: translateX(102%); } }
+  /* flick: short quick move, the projection carries the page */
+  [data-kind=flick] .dot { animation: f-dot 2.6s infinite; }
+  [data-kind=flick] .top { animation: f-top 2.6s infinite; }
+  @keyframes f-dot { 0% { left: 22%; opacity: 0; transform: scale(1.5); } 12% { left: 22%; opacity: 1; transform: scale(1); }
+    22% { left: 46%; opacity: 1; } 27%, 100% { left: 52%; opacity: 0; transform: scale(1.5); } }
+  @keyframes f-top { 0%, 12% { transform: translateX(0); } 22% { transform: translateX(25%); animation-timing-function: cubic-bezier(.1,.7,.2,1); }
+    52%, 100% { transform: translateX(102%); } }
+  /* catch: flick, press the page mid-flight, flick again: two pages */
+  [data-kind=catch] .dot { animation: c-dot 3.6s infinite; }
+  [data-kind=catch] .top { animation: c-top 3.6s infinite; }
+  [data-kind=catch] .mid { animation: c-mid 3.6s infinite; }
+  @keyframes c-dot { 0% { left: 22%; opacity: 0; transform: scale(1.5); } 8% { left: 22%; opacity: 1; transform: scale(1); }
+    16% { left: 44%; opacity: 1; } 20% { left: 48%; opacity: 0; transform: scale(1.5); }
+    30% { left: 30%; opacity: 0; transform: scale(1.5); } 34% { left: 30%; opacity: 1; transform: scale(1); }
+    44% { left: 56%; opacity: 1; } 48%, 100% { left: 60%; opacity: 0; transform: scale(1.5); } }
+  @keyframes c-top { 0%, 8% { transform: translateX(0); } 16% { transform: translateX(24%); animation-timing-function: cubic-bezier(.1,.7,.2,1); }
+    34% { transform: translateX(62%); } 44% { transform: translateX(88%); animation-timing-function: cubic-bezier(.1,.7,.2,1); } 62%, 100% { transform: translateX(102%); } }
+  @keyframes c-mid { 0%, 34% { transform: translateX(-30%); } 44% { transform: translateX(-8%); animation-timing-function: cubic-bezier(.1,.7,.2,1); }
+    56% { transform: translateX(40%); } 78%, 100% { transform: translateX(102%); } }
+  /* rubber: nothing behind, the page resists and springs back */
+  [data-kind=rubber] .dot { animation: r-dot 2.8s infinite; }
+  [data-kind=rubber] .top { animation: r-top 2.8s infinite; }
+  @keyframes r-dot { 0% { left: 18%; opacity: 0; transform: scale(1.5); } 10% { left: 18%; opacity: 1; transform: scale(1); }
+    50% { left: 78%; opacity: 1; } 56%, 100% { left: 78%; opacity: 0; transform: scale(1.5); } }
+  @keyframes r-top { 0%, 10% { transform: translateX(0); } 50% { transform: translateX(22%); } 54% { transform: translateX(22%); animation-timing-function: cubic-bezier(.3,1.3,.5,1); }
+    76%, 100% { transform: translateX(0); } }
+  /* axis: vertical scrolls the content, horizontal moves the page */
+  [data-kind=axis] .dot { animation: a-dot 4s infinite; }
+  [data-kind=axis] .lines { animation: a-lines 4s infinite; }
+  [data-kind=axis] .top { animation: a-top 4s infinite; }
+  @keyframes a-dot { 0% { left: 50%; top: 78%; opacity: 0; transform: scale(1.5); } 6% { left: 50%; top: 78%; opacity: 1; transform: scale(1); }
+    30% { left: 50%; top: 32%; opacity: 1; } 35% { left: 50%; top: 32%; opacity: 0; transform: scale(1.5); }
+    45% { left: 20%; top: 58%; opacity: 0; transform: scale(1.5); } 51% { left: 20%; top: 58%; opacity: 1; transform: scale(1); }
+    72% { left: 70%; top: 58%; opacity: 1; } 77%, 100% { left: 70%; top: 58%; opacity: 0; transform: scale(1.5); } }
+  @keyframes a-lines { 0%, 6% { transform: translateY(0); } 30%, 100% { transform: translateY(-40px); } }
+  @keyframes a-top { 0%, 51% { transform: translateX(0); } 72% { transform: translateX(52%); } 90%, 100% { transform: translateX(102%); } }
+  /* tap: a tap presses the button; a drag that starts on it does not */
+  [data-kind=tap] .dot { animation: t-dot 3.6s infinite; }
+  [data-kind=tap] .btnx { animation: t-btn 3.6s infinite; }
+  [data-kind=tap] .top { animation: t-top 3.6s infinite; }
+  @keyframes t-dot { 0% { left: 50%; opacity: 0; transform: scale(1.5); } 8% { left: 50%; opacity: 1; transform: scale(1); } 14% { left: 50%; opacity: 0; transform: scale(1.5); }
+    34% { left: 50%; opacity: 0; transform: scale(1.5); } 40% { left: 50%; opacity: 1; transform: scale(1); } 62% { left: 86%; opacity: 1; }
+    66%, 100% { left: 86%; opacity: 0; transform: scale(1.5); } }
+  @keyframes t-btn { 0%, 7% { background: #10181f; } 9%, 16% { background: #2f9e5b; } 20%, 100% { background: #10181f; } }
+  @keyframes t-top { 0%, 40% { transform: translateX(0); } 62% { transform: translateX(42%); } 80%, 100% { transform: translateX(102%); } }
+  @media (prefers-reduced-motion: reduce) { .hint * { animation: none !important; } .hint .dot { opacity: 1; } }
+
+  /* ---------- router lessons ---------- */
+  .stack { display: flex; flex-direction: column-reverse; gap: 6px; margin: 0 0 18px; }
+  .stack div { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--surface);
+    font: 13px ui-monospace, Menlo, monospace; color: var(--ink-2); transition: transform 0.2s; }
+  .stack div.cur { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .stack div.fwd { opacity: 0.5; border: 1px dashed var(--line); background: transparent; }
+  .stack em { margin-left: auto; font-style: normal; font-size: 11px; opacity: 0.8; }
+  .demo-hero { height: 180px; border-radius: 22px; display: grid; place-items: center; margin: 0 0 18px; color: #fff;
+    font-size: 64px; font-weight: 800; letter-spacing: -0.03em; }
+  .spin { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 18px; background: var(--accent); }
+  .confirm { padding: 14px; margin: 0 0 18px; border-radius: 16px; background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
+  .confirm p { margin: 0 0 10px; font-weight: 650; }
+  table.ref { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--surface); border-radius: 14px; overflow: hidden; margin: 0 0 18px; }
+  table.ref td { padding: 9px 12px; vertical-align: top; border-top: 0.5px solid var(--line); line-height: 1.5; }
+  table.ref tr:first-child td { border-top: 0; }
+  table.ref td:first-child { overflow-wrap: anywhere; min-width: 7.5em; font: 12.5px ui-monospace, Menlo, monospace; color: var(--accent); }
+  table.ref td.def { white-space: nowrap; font: 12px ui-monospace, Menlo, monospace; color: var(--ink-2); }
+  .scrollx { margin: 0 0 18px; border-radius: 14px; overflow: hidden; }
+  .scrollx table.ref { margin: 0; }
+
+  /* ---------- HUD ---------- */
+  .hud { position: absolute; z-index: 9; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 99px; pointer-events: none; white-space: pre;
+    background: rgba(16, 24, 31, 0.8); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    font: 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .hud i { width: 46px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.22); position: relative; overflow: hidden; }
+  .hud i b { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; background: #5fe0ea; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="intro">
+    <img class="logo" src="/icon.svg" alt="">
+    <h1>swipe.js</h1>
+    <p class="tag">把“左右滑动翻页”变成一个数字 <b>p</b>。</p>
+    <p>右边就是一个用 swipe.js 写成的 app：这份文档本身就是演示。</p>
+    <p>在桌面上，<b>按住鼠标横向拖动</b>页面，和手指滑动完全一样；浏览器的后退 / 前进、<kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> 也会带动画。</p>
+    <p>在手机上打开体验最好，还可以“添加到主屏幕”当作 app 使用。</p>
+    <div class="links">
+      <a href="https://github.com/HansO-o/swipe" target="_blank" rel="noopener">GitHub</a>
+      <a href="/lib/swipe.js" target="_blank">swipe.js 源码</a>
+    </div>
+  </aside>
+  <div class="device"><div id="root"></div></div>
+</div>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

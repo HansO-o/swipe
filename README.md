@@ -154,6 +154,24 @@ function Item({ params, query }) {
 cd react-example && npm install && npm run build   # 生成 app.js（已包含 React）
 ```
 
+## 官网
+
+[`site/`](site/) 是 swipe.js 的官网，本身就是一个用 `react.js` 写成的 app：每一种手势都有一课，带练习区、实时读数和 p 的示波器。它部署在 Cloudflare Workers（名为 `swipe`），只用静态资源，没有 Worker 脚本。
+
+```bash
+cd site && npm install
+npm run build     # 生成 site/dist：app 打包、public/ 静态文件，以及 /lib/ 下的库文件
+npm run preview   # 本地用 wrangler dev 预览
+```
+
+Workers Builds（在 Cloudflare 里连接这个仓库）的设置：
+
+| 项 | 值 |
+|---|---|
+| Root directory | `site` |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+
 ## 禁止缩放
 
 `nozoom.js` 让安装后的 PWA 始终保持 100%，不能被放大或缩小：

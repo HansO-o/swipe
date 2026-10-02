@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The swipe.js website: a static app served by Workers static assets, no Worker script.
+  // Workers Builds: root directory "site", build command "npm run build",
+  // deploy command "npx wrangler deploy".
+  "name": "swipe",
+  "compatibility_date": "2026-09-29",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist",
+    // The site routes with real paths (/gesture/flick); any unknown path gets index.html.
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -1,0 +1,7 @@
+# The library files are importable straight from this site.
+/lib/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=300
+
+/app.*.js
+  Cache-Control: public, max-age=31536000, immutable
