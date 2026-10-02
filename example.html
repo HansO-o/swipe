@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>swipe.js 示例</title>
+<style>
+  :root { color-scheme: light dark; --bg: #eef1f3; --ink: #15202a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0d1217; --ink: #e8eef2; } }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "PingFang SC", "Noto Sans SC", sans-serif; }
+  #stage { position: fixed; inset: 0; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .page { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; padding: 24px; color: #10181f; will-change: transform; }
+  .page h1 { margin: 0; font-size: 52px; font-weight: 700; }
+  .page p { margin: 0; max-width: 28em; text-align: center; opacity: 0.75; }
+  button { font: inherit; font-weight: 600; padding: 11px 22px; border: 0; border-radius: 999px;
+    background: #10181f; color: #fff; cursor: pointer; }
+  #hud { position: fixed; z-index: 9; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding: 6px 10px; border-radius: 8px; background: rgba(16, 24, 31, 0.72); color: #fff;
+    font: 13px/1.4 ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hud"></div>
+<script type="module">
+  import { createSwipe } from './swipe.js';
+
+  const stage = document.getElementById('stage');
+  const hud = document.getElementById('hud');
+  const pages = []; // page elements, 0 = root
+  let index = 0; // the page on screen
+
+  const swipe = createSwipe(stage, {
+    // Nothing to swipe to on a lone root page; otherwise everything behind and ahead.
+    limits: () => (pages.length > 1 ? { back: index, forward: pages.length - 1 - index } : null),
+    onCommit: (n) => { index -= n; },
+  });
+
+  function addPage() {
+    const n = pages.length;
+    const el = document.createElement('section');
+    el.className = 'page';
+    el.style.background = `hsl(${(n * 47 + 190) % 360} 70% 70%)`;
+    el.innerHTML = `<h1>第 ${n} 页</h1>
+      <p>任意位置右滑返回，返回后左滑前进。甩出去后趁页面还在飞时再按住、再甩一次，可以连续翻两页。</p>
+      <button>推入下一页</button>`;
+    el.querySelector('button').addEventListener('click', push);
+    stage.append(el);
+    pages.push(el);
+  }
+
+  function push() {
+    if (swipe.busy) return; // limits are frozen until the current flight lands
+    for (const el of pages.splice(index + 1)) el.remove(); // drop forward pages
+    addPage();
+    index++;
+    swipe.enter();
+  }
+
+  // Everything on screen is a function of p.
+  swipe.subscribe(({ p, state }) => {
+    const s = index - p / 100; // continuous position in the stack
+    pages.forEach((el, i) => {
+      const d = Math.max(-1, Math.min(1, i - s)); // 0 on screen, +1 off to the right, -1 covered
+      el.style.transform = `translateX(${d >= 0 ? d * 100 : d * 30}%)`;
+      el.style.filter = d < 0 ? `brightness(${1 + d * 0.35})` : '';
+      el.style.visibility = Math.abs(i - s) < 1 ? '' : 'hidden';
+    });
+    hud.textContent = `p ${p.toFixed(1).padStart(6)} · ${state} · 第 ${index} 页`;
+  });
+
+  addPage();
+</script>
+</body>
+</html>

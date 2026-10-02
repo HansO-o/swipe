@@ -1,0 +1,15 @@
+{
+  "name": "swipe-p",
+  "version": "0.2.0",
+  "private": true,
+  "description": "A page swipe as one number p, plus a history-synced page stack and React router.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./swipe.d.ts", "default": "./swipe.js" },
+    "./history": { "types": "./history.d.ts", "default": "./history.js" },
+    "./react": { "types": "./react.d.ts", "default": "./react.js" }
+  },
+  "peerDependencies": { "react": ">=18" },
+  "peerDependenciesMeta": { "react": { "optional": true } }
+}
