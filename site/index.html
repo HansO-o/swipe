@@ -23,14 +23,22 @@
     --swipe-page-bg: var(--page);
     color-scheme: light;
   }
+  /* An explicit data-theme (set by an embedding viewer) wins over the system setting either way. */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #0b1015; --page: #0b1015; --surface: #151d24; --ink: #e6eef3; --ink-2: #9aa7b2; --ink-3: #6b7884;
       --line: #232e37; --accent: #46c6d2; --accent-ink: #052a2e; --accent-soft: #10343a; --warn: #ff8a70;
       --ok: #5fd08f; --code-bg: #10171d; --kw: #e58bd0; --str: #8fd69b; --num: #ffb46b; --com: #6f7d88; --tag: #7cb8ff;
       --desk: #05080b; --shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
       color-scheme: dark;
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1015; --page: #0b1015; --surface: #151d24; --ink: #e6eef3; --ink-2: #9aa7b2; --ink-3: #6b7884;
+    --line: #232e37; --accent: #46c6d2; --accent-ink: #052a2e; --accent-soft: #10343a; --warn: #ff8a70;
+    --ok: #5fd08f; --code-bg: #10171d; --kw: #e58bd0; --str: #8fd69b; --num: #ffb46b; --com: #6f7d88; --tag: #7cb8ff;
+    --desk: #05080b; --shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
@@ -307,7 +315,7 @@
     <p>在手机上打开体验最好，还可以“添加到主屏幕”当作 app 使用。</p>
     <div class="links">
       <a href="https://github.com/HansO-o/swipe" target="_blank" rel="noopener">GitHub</a>
-      <a href="/lib/swipe.js" target="_blank">swipe.js 源码</a>
+      <a href="/lib/swipe.js" target="_blank" rel="noopener">swipe.js 源码</a>
     </div>
   </aside>
   <div class="device"><div id="root"></div></div>

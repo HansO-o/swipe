@@ -6,6 +6,8 @@ import { SIZES } from './home.jsx';
 import { useSettings } from './settings.js';
 import { Code, Group, Page, Row } from './ui.jsx';
 
+// Where the library files are linked from: this site's /lib/, or GitHub in the preview build.
+const LIB = __LIB__;
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
 function Ref({ rows }) {
@@ -19,16 +21,16 @@ function Ref({ rows }) {
 }
 
 export function Install() {
-  const origin = location.origin;
+  const origin = __ORIGIN__ || location.origin;
   return (
     <Page title="安装与引入">
       <h2>复制一个文件</h2>
       <p><code>swipe.js</code> 是单文件、零依赖的 ES 模块。只要手势，复制它就够了；需要页面栈或 React 路由，再加上对应的文件。</p>
       <Group foot="大小为压缩后再 gzip。每个文件都附带 .d.ts 类型声明。">
-        <Row href="/lib/swipe.js" label="swipe.js" sub="手势：产出 p" detail={kb(SIZES.swipe)} />
-        <Row href="/lib/history.js" label="history.js" sub="与浏览器历史同步的页面栈，不依赖框架" detail={kb(SIZES.history)} />
-        <Row href="/lib/react.js" label="react.js" sub="React 路由：SwipeRouter、Link、hooks" detail={kb(SIZES.react)} />
-        <Row href="/lib/nozoom.js" label="nozoom.js" sub="PWA 禁止整页缩放" detail={kb(SIZES.nozoom)} />
+        <Row href={`${LIB}swipe.js`} label="swipe.js" sub="手势：产出 p" detail={kb(SIZES.swipe)} />
+        <Row href={`${LIB}history.js`} label="history.js" sub="与浏览器历史同步的页面栈，不依赖框架" detail={kb(SIZES.history)} />
+        <Row href={`${LIB}react.js`} label="react.js" sub="React 路由：SwipeRouter、Link、hooks" detail={kb(SIZES.react)} />
+        <Row href={`${LIB}nozoom.js`} label="nozoom.js" sub="PWA 禁止整页缩放" detail={kb(SIZES.nozoom)} />
       </Group>
       <h2>直接从本站导入</h2>
       <p>本站的 <code>/lib/</code> 下就是仓库里的源文件，允许跨域，可以直接在浏览器里 import：</p>
