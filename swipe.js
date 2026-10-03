@@ -15,10 +15,11 @@
 //   - One swipe moves at most one page. Catching a flight and swiping again chains pages.
 //   - From the first touch until rest, limits are frozen and swipe.busy is true:
 //     queue your own navigation until onCommit.
-//   - A touch either scrolls or swipes, never both. Whichever starts first owns it: a scroll
-//     under the finger before the swipe locks drops the swipe; once the swipe locks, scrolling
-//     is cancelled (touchmove.preventDefault) and, where the browser has already committed to
-//     it, held where it was.
+//   - A touch either scrolls or swipes, never both. Whichever starts first owns it:
+//     the moment a touch swipe locks, every scrollable box under the finger is switched to
+//     overflow: hidden (and touchmove is cancelled) until the finger lifts; if one of them
+//     scrolls anyway, or scrolled before the lock, the swipe yields at once: p snaps back to
+//     its starting point and the rest of the touch is left to scrolling.
 //
 // States: idle → pending (finger down) → tracking (horizontal) → settling (flight) → idle.
 // A press during a flight catches it ('held') until the finger picks a direction.
@@ -285,6 +286,7 @@ class Swipe {
   }
 
   destroy() {
+    this.#release(this.#ptr);
     this.#detach();
     cancelAnimationFrame(this.#raf);
     this.#raf = 0;
@@ -357,13 +359,46 @@ class Swipe {
     const node = e.target === document ? document.scrollingElement : e.target;
     const at = P.scrollers.get(node);
     if (!at) return;
-    if (this.#state === 'tracking') {
-      if (node.scrollTop !== at[0]) node.scrollTop = at[0];
-      if (node.scrollLeft !== at[1]) node.scrollLeft = at[1];
-    } else if (Math.abs(node.scrollTop - at[0]) + Math.abs(node.scrollLeft - at[1]) > 3) {
-      // (a few px are allowed: the press itself stops a momentum scroll, which can report one last step)
-      this.#abandon();
+    // (a few px are allowed: the press itself stops a momentum scroll, which can report one last step)
+    if (Math.abs(node.scrollTop - at[0]) + Math.abs(node.scrollLeft - at[1]) <= 3) return;
+    if (this.#state === 'tracking') this.#yieldToScroll();
+    else this.#abandon();
+  }
+
+  // The content scrolled after all: the scroll wins. p snaps back to where this gesture started
+  // (a caught flight's landing page, or 0) and the finger is ignored until it lifts.
+  #yieldToScroll() {
+    const P = this.#ptr;
+    this.#release(P);
+    this.#p = this.#base;
+    this.#target = this.#base;
+    this.#finish();
+    this.#suppress = true;
+    setTimeout(() => { this.#suppress = false; }, 400);
+    this.wake();
+  }
+
+  // A touch swipe just locked: no box under the finger may scroll until it lifts. Applied in the
+  // same event that locks, so the next frame already has them frozen. (Not for a mouse: hiding a
+  // classic scrollbar would shift the layout, and a mouse drag never scrolls anyway.)
+  #freezeScroll(P) {
+    P.frozen = [];
+    for (const [n] of P.scrollers) {
+      const cs = getComputedStyle(n);
+      if (!/auto|scroll/.test(cs.overflowX + cs.overflowY) && n !== document.scrollingElement) continue;
+      if (n.scrollHeight <= n.clientHeight + 1 && n.scrollWidth <= n.clientWidth + 1) continue;
+      P.frozen.push([n, n.style.overflow]);
+      n.style.overflow = 'hidden';
     }
+  }
+
+  // The finger is done with this swipe: undo what pressing and locking changed.
+  #release(P) {
+    if (this.#ptr === P) this.#ptr = null;
+    if (!P) return;
+    if (P.frozen) for (const [n, o] of P.frozen) n.style.overflow = o;
+    P.frozen = null;
+    if (P.mouse) document.documentElement.style.userSelect = document.documentElement.style.webkitUserSelect = '';
   }
 
   #move(e) {
@@ -386,6 +421,7 @@ class Swipe {
       if (this.#state === 'pending') this.#begin();
       this.#state = 'tracking';
       this.#suppress = true;
+      if (!P.mouse) this.#freezeScroll(P);
       try { this.#el.setPointerCapture(e.pointerId); } catch {}
       P.xL = e.clientX;
       P.rawL = this.#unrubber(this.#p);
@@ -409,8 +445,7 @@ class Swipe {
   #up(e, cancelled) {
     const P = this.#ptr;
     if (!P || e.pointerId !== P.id) return;
-    this.#ptr = null;
-    if (P.mouse) document.documentElement.style.userSelect = document.documentElement.style.webkitUserSelect = '';
+    this.#release(P);
     if (this.#state === 'tracking') {
       const est = cancelled ? { v: 0, a: 0 } : this.#estimate(e.timeStamp);
       const { target, proj } = this.#choose(this.#p, est.v, est.a);
@@ -423,7 +458,7 @@ class Swipe {
   }
 
   #abandon() {
-    this.#ptr = null;
+    this.#release(this.#ptr);
     if (this.#state === 'held') this.#settle(this.#base, 0); // let the caught flight finish
     else if (this.#state === 'pending') this.#state = 'idle';
     // A press that caught a flight blocks one click; a press that turned into a scroll makes none.
