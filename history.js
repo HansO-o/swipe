@@ -16,6 +16,11 @@
 //
 // While a finger is down, a flight is landing or a history.go() is on its way, push /
 // replace / back are queued and run in order afterwards.
+//
+// urlOnly: true keeps the whole stack inside one history entry. The address bar still follows
+// the page on screen (replaceState), but no entries are added, so the browser's back button and
+// iOS Safari's own edge swipe leave the app instead of stepping through its pages, and can never
+// race the in-page swipe. back() / forward() and the swipe move through the stack directly.
 
 import { createSwipe } from './swipe.js';
 
@@ -43,7 +48,7 @@ class SwipeHistory {
   #snap = null;
 
   constructor(el, opts = {}) {
-    this.#o = { hash: false, base: '', storageKey: 'swipe-history', ...opts };
+    this.#o = { hash: false, base: '', storageKey: 'swipe-history', urlOnly: false, ...opts };
     this.swipe = createSwipe(el, {
       ...opts.swipe,
       limits: () => this.#limits(),
@@ -89,7 +94,8 @@ class SwipeHistory {
     this.#entries = [...this.#entries.slice(0, this.#index + 1), e];
     this.#index++;
     this.#hist = this.#offset + this.#index;
-    history.pushState(this.#state(e), '', this.href(path));
+    if (this.#o.urlOnly) history.replaceState(this.#state(e), '', this.href(path));
+    else history.pushState(this.#state(e), '', this.href(path));
     this.#changed();
     this.swipe.enter();
   };
@@ -111,12 +117,17 @@ class SwipeHistory {
       this.#queue.push(() => this.back(n, { force }));
       return true;
     }
-    const at = this.#hist - this.#offset;
+    // urlOnly: there is no browser entry to go to; count from where the stack is heading.
+    const at = this.#o.urlOnly ? this.#landing() : this.#hist - this.#offset;
     const k = clamp(n, at - (this.#entries.length - 1), at);
     if (!k) return false;
     if (k > 0 && !force && this.#blockedFrom(at, k)) {
       this.#emit('blocked', this.#entries[at]);
       return false;
+    }
+    if (this.#o.urlOnly) {
+      s.go(k); // the address bar follows in #commit
+      return true;
     }
     this.#force = force;
     history.go(-k); // popstate → #follow animates
@@ -141,6 +152,7 @@ class SwipeHistory {
   // ---------- browser → stack ----------
 
   #onPop = (e) => {
+    if (this.#o.urlOnly) return this.#popUrlOnly();
     const st = e.state?.[MARK];
     const force = this.#force;
     this.#force = false;
@@ -164,6 +176,31 @@ class SwipeHistory {
     this.#follow();
   };
 
+  // The page the stack is on, or will be on once the current flight lands.
+  #landing() {
+    const s = this.swipe;
+    return this.#index - (s.state === 'settling' ? s.snapshot().target / 100 : 0);
+  }
+
+  // urlOnly: the only way to get a popstate is the browser moving to an entry of its own
+  // (an address typed into the bar in hash mode, or one left from before urlOnly). Fly to that
+  // path if it is in the stack, otherwise treat it as a push; then fold it back into one entry.
+  #popUrlOnly() {
+    const path = this.#path();
+    const s = this.swipe;
+    if (s.state !== 'idle' && s.state !== 'settling') return void this.#queue.push(() => this.#popUrlOnly());
+    const at = this.#landing();
+    let to = -1;
+    for (let i = this.#entries.length - 1; i >= 0; i--) if (this.#entries[i].path === path) { to = i; break; }
+    if (to === at) return void history.replaceState(this.#state(this.#entries[at], this.#offset + at), '', location.href);
+    if (to >= 0) {
+      history.replaceState(this.#state(this.#entries[at], this.#offset + at), '', this.href(this.#entries[at].path));
+      s.go(at - to);
+      return;
+    }
+    this.#adopt();
+  }
+
   // Fly the stack to where the browser is. If a finger is down, its landing wins and
   // #commit moves the browser instead.
   #follow() {
@@ -180,6 +217,12 @@ class SwipeHistory {
     if (n) {
       this.#index = clamp(this.#index - n, 0, this.#entries.length - 1);
       this.#changed();
+    }
+    if (this.#o.urlOnly) {
+      this.#hist = this.#offset + this.#index;
+      const e = this.current;
+      if (n) history.replaceState(this.#state(e), '', this.href(e.path));
+      return this.#flush();
     }
     const want = this.#offset + this.#index;
     if (want !== this.#hist) {
@@ -265,6 +308,18 @@ class SwipeHistory {
     const st = history.state?.[MARK];
     let saved = null;
     try { saved = JSON.parse(sessionStorage.getItem(this.#o.storageKey)); } catch {}
+    if (this.#o.urlOnly) {
+      // One entry: the saved stack is ours if its current page is the one the URL shows.
+      const i = saved?.index;
+      const ok = Number.isInteger(i) && saved.entries?.[i]?.path === this.#path() && (!st || saved.entries[i].key === st.key);
+      this.#entries = ok ? saved.entries : [{ key: st?.key || newKey(), path: this.#path() }];
+      this.#index = ok ? i : 0;
+      this.#offset = 0;
+      this.#hist = this.#index;
+      history.replaceState(this.#state(this.current), '', location.href);
+      this.#changed();
+      return;
+    }
     if (st && saved?.entries?.[st.idx - saved.offset]?.key === st.key) {
       this.#entries = saved.entries;
       this.#offset = saved.offset;
@@ -283,7 +338,7 @@ class SwipeHistory {
   #changed() {
     this.#snap = { entries: this.#entries, index: this.#index };
     try {
-      sessionStorage.setItem(this.#o.storageKey, JSON.stringify({ offset: this.#offset, entries: this.#entries }));
+      sessionStorage.setItem(this.#o.storageKey, JSON.stringify({ offset: this.#offset, entries: this.#entries, index: this.#index }));
     } catch {}
     for (const fn of this.#subs) fn();
     this.#emit('change', this.#snap);

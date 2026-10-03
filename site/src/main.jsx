@@ -90,7 +90,7 @@ function App() {
   }, [transition, hud]);
   return (
     <SettingsCtx.Provider value={settings}>
-      <SwipeRouter routes={routes} hash={__HASH__} transition={TRANSITIONS[transition].fn}>
+      <SwipeRouter routes={routes} hash={__HASH__} urlOnly transition={TRANSITIONS[transition].fn}>
         <Studio />
         {hud && <Hud />}
       </SwipeRouter>

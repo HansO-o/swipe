@@ -34,7 +34,7 @@ function Home() {
       <main className="body">
         <p className="ver">v{BUILD.version} · swipe.js #{BUILD.lib} · 构建于 {BUILD.time}</p>
         <p className="lead">
-          每一页都是一条真实的浏览器历史记录。试试：触摸或鼠标按住页面横向拖动，浏览器的后退 / 前进按钮，或者 Alt + ← / →。
+          每一页都有自己的地址，但不会新增浏览器历史记录（urlOnly）：在页面之间用滑动或页面里的按钮切换，浏览器的后退会直接离开这里。试试：触摸或鼠标按住页面横向拖动。
         </p>
         <ul className="list">
           {ITEMS.map((it) => (
@@ -132,7 +132,7 @@ function Hud() {
 const routes = { '/': Home, '/item/:id': Item, '/settings': Settings, '*': NotFound };
 
 createRoot(document.getElementById('root')).render(
-  <SwipeRouter routes={routes} hash className="app">
+  <SwipeRouter routes={routes} hash urlOnly className="app">
     <Hud />
   </SwipeRouter>,
 );

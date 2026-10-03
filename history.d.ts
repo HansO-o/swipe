@@ -11,6 +11,9 @@ export interface SwipeHistoryOptions {
   hash?: boolean;
   /** Path prefix when not in hash mode, e.g. "/app". Default "" */
   base?: string;
+  /** Keep the stack in one history entry: the URL follows the page (replaceState) but no entries
+   *  are added, so the browser's back button leaves the app. Default false */
+  urlOnly?: boolean;
   /** sessionStorage key for the saved stack. Default "swipe-history" */
   storageKey?: string;
   /** swipe.js tuning (limits and onCommit are managed for you) */

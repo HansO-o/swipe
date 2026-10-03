@@ -51,7 +51,7 @@ function Item({ params, query }) {
   </>;
 }`}</Code>
       <ul className="dots">
-        <li><b>每一页都是一条真实的浏览器历史记录</b>，有自己的 URL，不插入哨兵记录。</li>
+        <li><b>每一页都有自己的 URL</b>。默认每一页都是一条真实的浏览器历史记录；加上 <code>urlOnly</code> 就只改地址、不新增记录，这个网站用的就是它。</li>
         <li><b>页面保活</b>：被盖住的页面不会卸载，滚动位置和输入内容都会保留。</li>
         <li><b>动画不触发 React 渲染</b>：每帧直接写样式，只有页面栈变化时 React 才重新渲染。</li>
         <li>页面结构是 <code>.swipe-page &gt; .swipe-scroll</code>（页面自己的滚动容器）加上 <code>.swipe-dim</code>（被盖住时的遮罩）。页面背景用 CSS 变量 <code>--swipe-page-bg</code>。</li>
@@ -96,6 +96,9 @@ export function HistoryLesson() {
   useEffect(() => nav.on('change', () => force((x) => x + 1)), [nav]);
   return (
     <Page title="浏览器前进后退">
+      <p>路由有两种和浏览器历史相处的方式。<b>这个网站开着 <code>urlOnly</code></b>：地址栏跟着当前页变，但历史记录始终只有一条，所以浏览器的后退会直接离开网站，iOS Safari 的边缘返回手势也不会和页内滑动抢同一次返回。</p>
+      <Code>{`<SwipeRouter routes={routes} urlOnly />   // 只改地址，不新增历史记录`}</Code>
+      <h2>默认模式：每页一条历史记录</h2>
       <ul className="dots">
         <li><b>浏览器的后退 / 前进</b>（按钮、<code>Alt + ←/→</code>、鼠标侧键、安卓返回键）：地址栏立刻变化，页面不会瞬间切换，而是沿贝塞尔曲线播放进退动画。连按几次会合并成一次飞行。</li>
         <li><b>手势返回 / 前进</b>：页面落地后，再用 <code>history.go(±n)</code> 把地址栏带过去。</li>
@@ -111,10 +114,10 @@ export function HistoryLesson() {
       </section>
       <div className="btns">
         <Link className="btn" to="/router/demo/1">推入演示页</Link>
-        <button className="btn ghost" onClick={() => history.back()}>history.back()</button>
+        <button className="btn ghost" onClick={() => nav.back()}>nav.back()</button>
         <button className="btn ghost" onClick={() => location.reload()}>刷新</button>
       </div>
-      <p>刷新之后，试着向右滑：上一页还在。</p>
+      <p>刷新之后，试着向右滑：上一页还在（两种模式都一样）。下面的 <code>history.length</code> 在这个网站里不会随着推入页面增加。</p>
       <h2>在代码里导航</h2>
       <Code>{`
 const nav = useNavigator();

@@ -132,6 +132,7 @@ function Item({ params, query }) {
 - **手势返回 / 前进**：页面落地后，再用 `history.go(±n)` 把地址栏带过去。
 - **前进记录的清理**：返回之后再 `push` 新页面，原来的前进记录会被丢弃，浏览器和页面栈保持一致。
 - **刷新后栈还在**：页面栈保存在 `sessionStorage` 里，刷新后仍然可以滑回之前的页面。
+- **`urlOnly`：只改地址，不新增历史记录**。`<SwipeRouter urlOnly>`（或 `createSwipeHistory(el, { urlOnly: true })`）把整个页面栈放在一条历史记录里：地址栏仍然跟着当前页变化（`replaceState`），但不会 `pushState`。页面之间只能靠滑动、`back()` / `forward()` 和页面里的按钮切换；浏览器的后退按钮和 iOS Safari 的边缘返回手势会直接离开整个应用，也就不会和页内滑动抢同一次返回。代价：浏览器后退不再是“上一页”，Android 返回键会直接关闭已安装的 PWA，`useSwipeBlock` 也拦不住离开应用。swipe.earth.icu 和 `site/` 都开启了这个模式。
 - **页面保活**：被盖住的页面不会卸载，滚动位置和输入内容都会保留。
 - **动画不触发 React 渲染**：每帧直接写样式；只有页面栈变化时 React 才重新渲染。
 
@@ -139,7 +140,7 @@ function Item({ params, query }) {
 
 | 名称 | 作用 |
 |---|---|
-| `<SwipeRouter routes hash base transition swipe>` | `hash`：使用 `#/path` 形式的 URL，任何静态托管都能用；`base`：不用 hash 时的路径前缀；`transition(page, d, frame)`：自定义页面动画，默认是 iOS 风格的 `slide`；`swipe`：swipe.js 的参数。子元素会渲染在页面层之上，适合放 tab 栏 |
+| `<SwipeRouter routes hash base urlOnly transition swipe>` | `hash`：使用 `#/path` 形式的 URL，任何静态托管都能用；`base`：不用 hash 时的路径前缀；`urlOnly`：只改地址、不新增历史记录（见上文）；`transition(page, d, frame)`：自定义页面动画，默认是 iOS 风格的 `slide`；`swipe`：swipe.js 的参数。子元素会渲染在页面层之上，适合放 tab 栏 |
 | `<Link to replace>` | 带动画的推入或替换。按住 Ctrl / ⌘ 等修饰键点击时，保留浏览器的默认行为 |
 | `useNavigator()` | `push(path)`、`replace(path)`、`back(n, { force })`、`forward(n)`、`href(path)`、`swipe` |
 | `useRoute()` | 当前组件所在页面的 `{ path, params, query, key }` |

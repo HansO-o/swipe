@@ -60,17 +60,18 @@ export function matchRoute(routes, path) {
 
 /**
  * props: routes, hash (use #/path URLs: works on any static host), base (path prefix when not
- * hash), transition(page, d, frame), swipe (swipe.js options), className, style.
+ * hash), urlOnly (one history entry: the URL follows the page, the back button leaves the app),
+ * transition(page, d, frame), swipe (swipe.js options), className, style.
  * children render on top of the stage (tab bars, overlays) and can use the hooks.
  */
-export function SwipeRouter({ routes, hash = false, base = '', transition = slide, swipe, className, style, children }) {
+export function SwipeRouter({ routes, hash = false, base = '', urlOnly = false, transition = slide, swipe, className, style, children }) {
   const stage = useRef(null);
   const [ctx, setCtx] = useState(null);
   const trans = useRef(transition);
   trans.current = transition;
 
   useLayoutEffect(() => {
-    const nav = createSwipeHistory(stage.current, { hash, base, swipe });
+    const nav = createSwipeHistory(stage.current, { hash, base, urlOnly, swipe });
     const pages = new Map(); // key → { el, scroll, dim, d, inert }
     const pageFns = new Map(); // key → Set(fn(d, frame))
     const frameFns = new Set();

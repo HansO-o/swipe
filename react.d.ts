@@ -23,6 +23,8 @@ export interface SwipeRouterProps {
   routes: Record<string, ComponentType<PageProps>>;
   hash?: boolean;
   base?: string;
+  /** One history entry: the URL follows the page but nothing is pushed; the back button leaves the app. */
+  urlOnly?: boolean;
   transition?: Transition;
   swipe?: Omit<SwipeOptions, 'limits' | 'onCommit'>;
   className?: string;
