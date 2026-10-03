@@ -17,6 +17,10 @@
 // While a finger is down, a flight is landing or a history.go() is on its way, push /
 // replace / back are queued and run in order afterwards.
 //
+// home: a path an installed app (home screen / standalone) always opens on. iOS keeps the URL
+// of whatever page was open when "Add to Home Screen" was used, so without this an app added
+// from a sub-page would open there. A reload keeps the page it was on.
+//
 // urlOnly: true keeps the whole stack inside one history entry. The address bar still follows
 // the page on screen (replaceState), but no entries are added, so the browser's back button and
 // iOS Safari's own edge swipe leave the app instead of stepping through its pages, and can never
@@ -27,6 +31,9 @@ import { createSwipe } from './swipe.js';
 const MARK = '__swipe';
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const newKey = () => Math.random().toString(36).slice(2, 10);
+const STANDALONE = '(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui), (display-mode: window-controls-overlay)';
+const standalone = () => matchMedia(STANDALONE).matches || navigator.standalone === true;
+const reloaded = () => performance.getEntriesByType?.('navigation')[0]?.type === 'reload';
 
 export function createSwipeHistory(el, opts) {
   return new SwipeHistory(el, opts);
@@ -305,6 +312,11 @@ class SwipeHistory {
   }
 
   #restore() {
+    if (this.#o.home != null && standalone() && !reloaded() && this.#path() !== this.#o.home) {
+      // Launched from the home screen: start over from home, not from where it was added.
+      history.replaceState(null, '', this.href(this.#o.home));
+      try { sessionStorage.removeItem(this.#o.storageKey); } catch {}
+    }
     const st = history.state?.[MARK];
     let saved = null;
     try { saved = JSON.parse(sessionStorage.getItem(this.#o.storageKey)); } catch {}

@@ -3,6 +3,31 @@
 线上版本看首页顶部（和 react-example 底部指示条）的标记：`v<版本> · swipe.js #<swipe.js 的哈希> · 构建于 <时间>`。
 哈希只由 `swipe.js` 的内容决定，所以同一份库代码永远是同一个哈希。
 
+## v0.4.1：主屏幕 app 总是从首页打开
+
+**状态：Chromium 模拟主屏幕启动实测；iOS 待真机确认。**
+
+线上标记：`v0.4.1 · swipe.js #b32c98b`。
+
+### 问题
+
+iOS 上如果在子页（比如 `#/item/3`）点“添加到主屏幕”，之后从桌面打开会直接进入那个子页。iOS 添加时会记下当时的完整地址；swipe.earth.icu 原来也没有 manifest。
+
+### 改动
+
+- `history.js` 新增 `home` 选项，`<SwipeRouter>` 新增同名属性：以主屏幕 app（`display-mode: standalone` 等，或 iOS 的 `navigator.standalone`）启动时，不管当初从哪一页添加，都从 `home` 开始，并清掉保存的页面栈；刷新（`navigation.type === 'reload'`）不受影响。
+- react-example 和 `site/` 都设置了 `home="/"`。
+- react-example 补上 `manifest.webmanifest`（`start_url: "./"`）、图标和 iOS 的 PWA meta 标签。
+- 版本号 0.4.1。
+
+### 已知限制
+
+- 已经添加到主屏幕的旧图标，它记下的地址不会变；但打开后会被这次的改动带回首页，不需要重新添加。
+
+### 撤回
+
+把 react-example 和 `site/` 里的 `home="/"` 删掉，重新打包 react-example 的 `app.js` 并提交即可；manifest 可以保留。整个撤回：`git revert <本次提交>` 后重新打包 `app.js`。分支 `before-home-launch` 保存了这次改动之前的 `main`。
+
 ## v0.4.0：路由只改地址，不新增历史记录（urlOnly）
 
 **状态：Chromium 实测；iOS Safari、Android 待真机确认。**

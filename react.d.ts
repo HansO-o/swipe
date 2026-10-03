@@ -25,6 +25,8 @@ export interface SwipeRouterProps {
   base?: string;
   /** One history entry: the URL follows the page but nothing is pushed; the back button leaves the app. */
   urlOnly?: boolean;
+  /** The path an installed app (home screen) always opens on, e.g. "/". A reload keeps its page. */
+  home?: string;
   transition?: Transition;
   swipe?: Omit<SwipeOptions, 'limits' | 'onCommit'>;
   className?: string;

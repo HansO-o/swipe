@@ -132,7 +132,7 @@ function Hud() {
 const routes = { '/': Home, '/item/:id': Item, '/settings': Settings, '*': NotFound };
 
 createRoot(document.getElementById('root')).render(
-  <SwipeRouter routes={routes} hash urlOnly className="app">
+  <SwipeRouter routes={routes} hash urlOnly home="/" className="app">
     <Hud />
   </SwipeRouter>,
 );

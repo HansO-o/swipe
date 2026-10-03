@@ -11,6 +11,9 @@ export interface SwipeHistoryOptions {
   hash?: boolean;
   /** Path prefix when not in hash mode, e.g. "/app". Default "" */
   base?: string;
+  /** An installed app (home screen / standalone) always opens on this path, e.g. "/", instead of
+   *  the page it was added from. A reload keeps its page. Default: none */
+  home?: string;
   /** Keep the stack in one history entry: the URL follows the page (replaceState) but no entries
    *  are added, so the browser's back button leaves the app. Default false */
   urlOnly?: boolean;
