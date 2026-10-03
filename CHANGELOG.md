@@ -26,7 +26,7 @@ iOS 上如果在子页（比如 `#/item/3`）点“添加到主屏幕”，之�
 
 ### 撤回
 
-把 react-example 和 `site/` 里的 `home="/"` 删掉，重新打包 react-example 的 `app.js` 并提交即可；manifest 可以保留。整个撤回：`git revert <本次提交>` 后重新打包 `app.js`。分支 `before-home-launch` 保存了这次改动之前的 `main`。
+把 react-example 和 `site/` 里的 `home="/"` 删掉，重新打包 react-example 的 `app.js` 并提交即可；manifest 可以保留。整个撤回：`git revert 5a1c4c5` 后重新打包 `app.js`。分支 `before-home-launch` 保存了这次改动之前的 `main`。
 
 ## v0.4.0：路由只改地址，不新增历史记录（urlOnly）
 
