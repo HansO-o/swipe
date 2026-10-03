@@ -5,8 +5,12 @@ import { createSwipe } from '../../swipe.js';
 import { fmt } from './ui.jsx';
 
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
-export const HUES = [186, 40, 330, 140, 262, 12, 210, 96];
-export const cardBg = (i) => `linear-gradient(150deg, hsl(${HUES[i % HUES.length]} 72% 76%), hsl(${HUES[i % HUES.length] + 24} 64% 64%))`;
+// Vivid boards, like the studio palettes: lavender, coral, lime, sky, rose, mint.
+const BOARDS = [
+  ['#5b4dff', '#9a5cff', '#38a8ff'], ['#ff2a78', '#ff5065', '#ff9a3c'], ['#00a896', '#19c48a', '#a8d900'],
+  ['#2f7bff', '#38a8ff', '#7b5cff'], ['#ff5c8a', '#ff7aa8', '#ffc83d'], ['#10b9a0', '#22d3b0', '#38a8ff'],
+];
+export const cardBg = (i) => { const [a, b, c] = BOARDS[i % BOARDS.length]; return `linear-gradient(150deg, ${a}, ${b} 55%, ${c})`; };
 
 /**
  * count cards, starting on `start`. The deck carries data-no-swipe so the app's own page swipe
@@ -40,9 +44,9 @@ export function Deck({
         const d = clamp(i - s, -1, 1);
         el.style.transform = d === 0 ? '' : `translate3d(${(d > 0 ? d * 100 : d * 30).toFixed(3)}%,0,0)`;
         el.style.visibility = Math.abs(i - s) < 1 ? '' : 'hidden';
-        el.style.boxShadow = d > 0 && d < 1 ? '-6px 0 24px rgba(0,0,0,0.18)' : '';
+        el.style.boxShadow = d > 0 && d < 1 ? '-10px 0 30px rgba(30,10,80,0.28)' : '';
         const sh = shades.current[i];
-        if (sh) sh.style.opacity = d < 0 ? (-d * 0.22).toFixed(3) : '0';
+        if (sh) sh.style.opacity = d < 0 ? (-d * 0.3).toFixed(3) : '0';
       });
       const c = cells.current;
       if (c.p) c.p.textContent = fmt(f.p);

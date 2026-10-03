@@ -226,7 +226,7 @@ export function FrameLesson() {
   return (
     <Page title="逐帧联动">
       <p>页面里的模块也可以各自跟着手势动：<code>usePageFrame(fn)</code> 每帧调用 <code>fn(d, frame)</code>，<code>d</code> 是本页的位置。慢慢把这一页往右拖，看下面的方块：</p>
-      <div className="card" style={{ textAlign: 'center' }}>
+      <div className="card glass" style={{ textAlign: 'center' }}>
         <div ref={box} className="spin" />
         <div style={{ height: 6, borderRadius: 3, background: 'var(--line)', overflow: 'hidden', margin: '0 0 10px' }}>
           <div ref={bar} style={{ height: '100%', background: 'var(--accent)', transformOrigin: 'left' }} />

@@ -13,6 +13,15 @@ function paint({ el, dim }, d, { transform = '', opacity = '', shadow = '', radi
 }
 
 export const TRANSITIONS = {
+  glass: {
+    label: '玻璃',
+    // Pages are clear: the one below slips back and fades out, so two pages' content never stack up.
+    fn: (pg, d) => paint(pg, d, {
+      transform: d > 0 ? `translate3d(${(d * 100).toFixed(3)}%,0,0)` : d < 0 ? `translate3d(${(d * 28).toFixed(3)}%,0,0) scale(${(1 + d * 0.06).toFixed(4)})` : '',
+      opacity: d < 0 ? Math.max(0, 1 + d * 1.7).toFixed(3) : '',
+      shadow: d > 0 && d < 1 ? '-24px 0 48px -12px rgba(60,30,140,0.22)' : '',
+    }),
+  },
   slide: {
     label: 'iOS 推入',
     fn: (pg, d, f) => { pg.el.style.opacity = ''; pg.el.style.borderRadius = ''; slide(pg, d, f); },

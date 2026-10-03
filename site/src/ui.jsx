@@ -94,6 +94,15 @@ export function Page({ title, large, back = true, children }) {
 
 // ---------- grouped lists ----------
 
+/** A small glossy badge: the colour runs from a lighter tint to itself, like a lit plastic key. */
+export function Tile({ icon, color }) {
+  return (
+    <span className="tile" style={{ '--t': color, background: `linear-gradient(145deg, color-mix(in srgb, ${color} 62%, #fff), ${color} 70%)` }}>
+      <Icon name={icon} />
+    </span>
+  );
+}
+
 export function Group({ title, foot, children }) {
   return (
     <section className="group">
@@ -107,7 +116,7 @@ export function Group({ title, foot, children }) {
 export function Row({ to, href, icon, color, label, sub, detail, done, onClick, children }) {
   const inner = (
     <>
-      {icon && <span className="tile" style={{ background: color }}><Icon name={icon} /></span>}
+      {icon && <Tile icon={icon} color={color} />}
       <span className="label">{label}{sub && <small>{sub}</small>}</span>
       {detail != null && <span className="detail">{detail}</span>}
       {done && <Tick className="check" />}

@@ -71,7 +71,7 @@ function MiniStack() {
       pg.className = 'deck-card';
       pg.style.background = cardBg(n);
       pg.innerHTML = `<div class="n">${n}</div><div class="s">${n ? '右滑返回 · 返回后左滑前进' : '根页面：先推入一页'}</div>
-        <button class="btn" style="margin-top:8px;background:#10181f;color:#fff">推入下一页</button>`;
+        <button class="btn ghost" style="margin-top:8px">推入下一页</button>`;
       pg.querySelector('button').addEventListener('click', push);
       el.append(pg);
       pages.push(pg);
@@ -331,7 +331,7 @@ export function Axis() {
             style={{ position: 'absolute', inset: 0, overflowY: 'auto', touchAction: 'pan-y', padding: '14px 16px 30px', overscrollBehavior: 'contain' }}>
             <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>列表 {i + 1}</div>
             {Array.from({ length: 24 }, (_, k) => (
-              <div key={k} style={{ padding: '9px 0', borderTop: '1px solid rgba(0,0,0,0.12)', fontSize: 15 }}>第 {k + 1} 行 · 竖着滑我</div>
+              <div key={k} style={{ padding: '9px 0', borderTop: '1px solid rgba(255,255,255,0.3)', fontSize: 15 }}>第 {k + 1} 行 · 竖着滑我</div>
             ))}
           </div>
         )}
@@ -369,7 +369,7 @@ export function Tap() {
         card={(i) => (
           <>
             <div className="n">{i + 1}</div>
-            <button className="btn" style={{ background: '#10181f', color: '#fff', marginTop: 6 }}
+            <button className="btn ghost" style={{ marginTop: 6 }}
               onClick={() => { setCount((c) => c + 1); t.mark('tap'); }}>点我 · 已点 {count} 次</button>
           </>
         )}
