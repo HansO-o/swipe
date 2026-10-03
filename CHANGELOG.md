@@ -39,7 +39,7 @@ git commit -am "react-example: back to one history entry per page"
 git push origin HEAD:main
 ```
 
-整个改动一起撤回：`git revert <本次提交>`，再按上面重新打包 `app.js` 并提交。分支 `before-url-only` 保存了这次改动之前的 `main`。
+整个改动一起撤回：`git revert 75d2133`，再按上面重新打包 `app.js` 并提交。分支 `before-url-only` 保存了这次改动之前的 `main`。
 
 ## v0.3.0：滚动和翻页互斥（测试中）
 
