@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Link, SwipeRouter, useNavigator, usePageFrame, useSwipeBlock, useSwipeFrame } from '../react.js';
 
+const BUILD = __BUILD__; // { version, lib: hash of swipe.js, time }
+
 const NAMES = ['河边', '老菜场', '末班车', '旧书店', '天台', '夜市', '码头', '小巷'];
 const ITEMS = Array.from({ length: 16 }, (_, i) => ({ id: i + 1, name: `${NAMES[i % NAMES.length]} ${i + 1}`, hue: (i * 37 + 190) % 360 }));
 const item = (id) => ITEMS[(((id - 1) % ITEMS.length) + ITEMS.length) % ITEMS.length];
@@ -30,6 +32,7 @@ function Home() {
     <>
       <Bar title="Swipe Router" back={false} />
       <main className="body">
+        <p className="ver">v{BUILD.version} · swipe.js #{BUILD.lib} · 构建于 {BUILD.time}</p>
         <p className="lead">
           每一页都是一条真实的浏览器历史记录。试试：触摸或鼠标按住页面横向拖动，浏览器的后退 / 前进按钮，或者 Alt + ← / →。
         </p>
@@ -121,7 +124,7 @@ function Hud() {
   const nav = useNavigator();
   window.swipeRouter = nav; // for poking around in the console
   useSwipeFrame((f) => {
-    if (ref.current) ref.current.textContent = `p ${f.p.toFixed(1).padStart(6)} · ${f.state} · ${decodeURIComponent(location.hash || '#/')}`;
+    if (ref.current) ref.current.textContent = `v${BUILD.version} #${BUILD.lib} · p ${f.p.toFixed(1).padStart(6)} · ${f.state} · ${decodeURIComponent(location.hash || '#/')}`;
   });
   return <div className="hud" ref={ref} />;
 }

@@ -10,6 +10,7 @@ import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { buildStamp } from '../build-stamp.mjs';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(dir, '..');
@@ -49,6 +50,7 @@ const result = await build({
     'process.env.NODE_ENV': '"production"',
     __SIZES__: JSON.stringify(sizes),
     __VERSION__: JSON.stringify(pkg.version),
+    __BUILD__: JSON.stringify(buildStamp()),
     __HASH__: JSON.stringify(!!preview),
     __LIB__: JSON.stringify(preview ? 'https://github.com/HansO-o/swipe/blob/main/' : '/lib/'),
     __ORIGIN__: JSON.stringify(preview ? 'https://swipe.<你的子域>.workers.dev' : null),

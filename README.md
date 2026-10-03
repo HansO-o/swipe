@@ -155,6 +155,8 @@ function Item({ params, query }) {
 cd react-example && npm install && npm run build   # 生成 app.js（已包含 React）
 ```
 
+`app.js` 是提交在仓库里的打包结果，部署时不会重新构建：**改了库（`swipe.js` 等）之后要重新 build 并提交 `app.js`**，否则线上还是旧代码。首页顶部和底部指示条会显示版本号、`swipe.js` 的哈希和构建时间，用来确认线上跑的是哪一版。
+
 ## 官网
 
 [`site/`](site/) 是 swipe.js 的官网，本身就是一个用 `react.js` 写成的 app：每一种手势都有一课，带练习区、实时读数和 p 的示波器。它部署在 Cloudflare Workers（名为 `swipe`），只用静态资源，没有 Worker 脚本。

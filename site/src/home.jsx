@@ -6,6 +6,7 @@ import { Bar, Group, Row, Tile, useProgress } from './ui.jsx';
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 export const SIZES = __SIZES__;
 export const VERSION = __VERSION__;
+export const BUILD = __BUILD__; // { version, lib: hash of swipe.js, time }
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 
 // The app's own p, live, with a miniature of its page stack moving by the same number.
@@ -101,6 +102,7 @@ export function Home() {
       <Bar title="swipe.js" back={false} large />
       <main className="content">
         <div className="large">swipe.js</div>
+        <p className="ver">v{BUILD.version} · swipe.js #{BUILD.lib} · 构建于 {BUILD.time}</p>
         <Hero />
         <Tip />
         <Group title="开始">
