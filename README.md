@@ -39,6 +39,8 @@
 </script>
 ```
 
+每个版本改了什么、怎么撤回，见 [`CHANGELOG.md`](CHANGELOG.md)。
+
 完整可运行的例子见 [`example.html`](example.html)，一共约 60 行。
 
 ## 规则
